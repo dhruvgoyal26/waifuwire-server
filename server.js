@@ -66,6 +66,22 @@ wss.on('connection', (ws) => {
               client.send(sendData);
             }
           });
+        } else {
+          // Notify sender that target is offline
+          if (clients.has(currentUserId)) {
+            const errorMsg = JSON.stringify({
+              type: 'USER_OFFLINE',
+              payload: {
+                targetId: targetId,
+                action: payload.action
+              }
+            });
+            clients.get(currentUserId).forEach(client => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(errorMsg);
+              }
+            });
+          }
         }
         
         // Echo back to sender so their other tabs see it too

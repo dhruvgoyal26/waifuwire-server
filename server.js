@@ -21,10 +21,17 @@ const clients = new Map();
 wss.on('connection', (ws) => {
   console.log('New client connection initiated');
   let currentUserId = null;
+  ws.isAlive = true;
 
   ws.on('message', (messageAsString) => {
     try {
       const message = JSON.parse(messageAsString);
+      
+      if (message.type === 'PONG') {
+        ws.isAlive = true;
+        return;
+      }
+
       console.log('Received message type:', message.type);
 
       if (message.type === 'REGISTER') {
@@ -113,6 +120,10 @@ wss.on('connection', (ws) => {
 // Keep-Alive Ping every 20 seconds
 setInterval(() => {
   wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      return ws.terminate();
+    }
+    ws.isAlive = false;
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'PING' }));
     }

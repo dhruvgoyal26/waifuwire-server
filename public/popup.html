@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WaifuWire</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>WaifuWire</h1>
+      <div id="status-indicator" class="status disconnected"></div>
+    </header>
+    
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="group">Group</button>
+      <button class="tab-btn" data-tab="private">Private</button>
+      <button class="tab-btn" data-tab="profile">Profile</button>
+    </div>
+
+    <!-- Group Tab -->
+    <div id="tab-group" class="tab-content active">
+      <div class="chat-area">
+        <textarea id="group-input" placeholder="Message everyone..."></textarea>
+        <button id="group-send-btn" class="send-btn">Send to Group</button>
+      </div>
+    </div>
+
+    <!-- Private Tab -->
+    <div id="tab-private" class="tab-content">
+      <div class="chat-area">
+        <div class="contacts-area" style="display: flex; gap: 5px; margin-bottom: -5px;">
+          <select id="private-contacts" class="styled-input" style="flex: 1;">
+            <option value="">-- Saved Contacts --</option>
+          </select>
+          <button id="delete-contact-btn" class="secondary-btn" style="padding: 10px; background: rgba(255, 60, 60, 0.2); border-color: rgba(255, 60, 60, 0.4); color: #ff6b6b;" title="Delete Selected Contact">✕</button>
+        </div>
+        <div class="target-input-area" style="display: flex; gap: 5px;">
+          <input type="text" id="private-target" placeholder="Target User ID" class="styled-input" style="flex: 1;" />
+          <button id="add-contact-btn" class="secondary-btn" style="padding: 10px;">Save</button>
+        </div>
+        <textarea id="private-input" placeholder="Secret message..."></textarea>
+        <button id="private-send-btn" class="send-btn">Send Private</button>
+      </div>
+    </div>
+
+    <!-- Profile Tab -->
+    <div id="tab-profile" class="tab-content">
+      <div class="profile-area">
+        <p>Your Display Name:</p>
+        <div style="display: flex; gap: 5px; justify-content: center; margin-bottom: 20px;">
+          <input type="text" id="my-name-input" placeholder="Enter name" class="styled-input" style="text-align: center;" />
+          <button id="save-name-btn" class="secondary-btn">Save</button>
+        </div>
+        <p>Your Unique Code:</p>
+        <h3 id="my-id-display" style="margin-top: 5px; margin-bottom: 20px; color: var(--text-muted);">LOADING...</h3>
+        <button id="test-popup-btn" class="secondary-btn" style="width: 100%;">Test Anime Popup</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top: 15px; text-align: center; font-size: 12px; color: #888;">
+      Developed by Dhruv Agarwal | <a href="https://github.com/dhruvgoyal26" target="_blank" style="color: #ff6b6b; text-decoration: none; font-weight: bold;">GitHub</a>
+    </div>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

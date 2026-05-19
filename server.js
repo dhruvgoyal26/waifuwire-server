@@ -1,12 +1,51 @@
 const WebSocket = require('ws');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 const port = process.env.PORT || 3000;
 
-// Simple HTTP server for Uptime robots to ping
+// Simple HTTP server for Uptime robots to ping and serving popup files
 const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('WaifuWire Server is Awake!');
+  // Resolve static file paths securely
+  const urlPath = req.url === '/' ? '/popup.html' : req.url;
+  const filePath = path.join(__dirname, 'public', urlPath);
+  const resolvedPath = path.resolve(filePath);
+  const publicDir = path.resolve(path.join(__dirname, 'public'));
+
+  // Prevent directory traversal attacks
+  if (!resolvedPath.startsWith(publicDir)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
+  const extname = String(path.extname(filePath)).toLowerCase();
+  const mimeTypes = {
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.js': 'text/javascript',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpg',
+  };
+
+  const contentType = mimeTypes[extname] || 'application/octet-stream';
+
+  fs.readFile(filePath, (error, content) => {
+    if (error) {
+      if (error.code === 'ENOENT') {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('WaifuWire Server is Awake!');
+      } else {
+        res.writeHead(500);
+        res.end(`Server Error: ${error.code}`);
+      }
+    } else {
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(content, 'utf-8');
+    }
+  });
 });
 
 const wss = new WebSocket.Server({ server });

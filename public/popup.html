@@ -21,7 +21,45 @@
 
     <!-- Group Tab -->
     <div id="tab-group" class="tab-content active">
-      <div class="chat-area">
+      <!-- Selector & Create Button -->
+      <div style="display: flex; gap: 5px; margin-bottom: 12px; align-items: center;">
+        <select id="group-select" class="styled-input" style="flex: 1; padding: 10px; font-size: 13px; margin: 0;">
+          <option value="global">🌐 Global Chat (Everyone)</option>
+        </select>
+        <button id="show-create-group-btn" class="secondary-btn" style="padding: 10px 14px; font-weight: bold; border-color: var(--primary); color: var(--primary);" title="Create Custom Group">+</button>
+      </div>
+
+      <!-- Selected Group Info Banner -->
+      <div id="selected-group-info" style="display: none; font-size: 12px; color: var(--text-muted); background: var(--bg-panel); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 12px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 10px;">
+          <span style="font-weight: bold; color: var(--text-light);">Members:</span>
+          <span id="group-members-display" style="font-size: 11px;">Loading...</span>
+        </div>
+        <button id="leave-group-btn" class="secondary-btn" style="padding: 4px 8px; font-size: 11px; background: rgba(255, 60, 60, 0.1); color: #ff6b6b; border-color: rgba(255, 60, 60, 0.2);" title="Leave this custom group">Leave</button>
+      </div>
+
+      <!-- Create Group Sliding Panel (Hidden by default) -->
+      <div id="create-group-panel" style="display: none; flex-direction: column; gap: 10px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+        <h4 style="margin: 0 0 5px 0; color: var(--primary); text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">Create Custom Group</h4>
+        
+        <input type="text" id="new-group-name" placeholder="Group Name (e.g. Friends)" class="styled-input" style="font-size: 13px;" />
+        
+        <div style="margin: 5px 0 2px 0;">
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Select Members (Contacts Only):</span>
+        </div>
+        
+        <div id="group-contacts-checklist" style="max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+          <!-- Dynamically filled with checkbox elements -->
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 5px;">
+          <button id="create-group-submit-btn" class="send-btn" style="flex: 1; padding: 8px; font-size: 12px;">Create</button>
+          <button id="create-group-cancel-btn" class="secondary-btn" style="flex: 1; padding: 8px; font-size: 12px;">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Chat Sending Area -->
+      <div id="group-send-area" class="chat-area">
         <textarea id="group-input" placeholder="Message everyone..."></textarea>
         <button id="group-send-btn" class="send-btn">Send to Group</button>
       </div>

@@ -98,6 +98,48 @@ wss.on('connection', (ws) => {
         });
       }
 
+      else if (message.type === 'CUSTOM_GROUP_MSG') {
+        const { groupId, groupName, members, payload } = message;
+        const broadcastData = JSON.stringify({
+          type: 'INCOMING_CUSTOM_GROUP_MSG',
+          groupId: groupId,
+          groupName: groupName,
+          members: members,
+          payload: payload
+        });
+
+        // Route strictly to the user IDs present in members
+        members.forEach(memberId => {
+          if (clients.has(memberId)) {
+            clients.get(memberId).forEach(client => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(broadcastData);
+              }
+            });
+          }
+        });
+      }
+
+      else if (message.type === 'LEAVE_GROUP') {
+        const { groupId, leavingUserId, members } = message;
+        const broadcastData = JSON.stringify({
+          type: 'INCOMING_LEAVE_GROUP',
+          groupId: groupId,
+          leavingUserId: leavingUserId
+        });
+
+        // Notify other members of the group
+        members.forEach(memberId => {
+          if (memberId !== leavingUserId && clients.has(memberId)) {
+            clients.get(memberId).forEach(client => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(broadcastData);
+              }
+            });
+          }
+        });
+      }
+
       else if (message.type === 'DIRECT_MSG') {
         const { targetId, payload } = message;
         const sendData = JSON.stringify({

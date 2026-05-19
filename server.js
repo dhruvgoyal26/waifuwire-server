@@ -15,7 +15,13 @@ const server = http.createServer((req, res) => {
 
   // Prevent directory traversal attacks
   if (!resolvedPath.startsWith(publicDir)) {
-    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.writeHead(403, { 
+      'Content-Type': 'text/plain',
+      'Access-Control-Allow-Origin': '*',
+      'Cross-Origin-Resource-Policy': 'cross-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Content-Security-Policy': "frame-ancestors * chrome-extension://*"
+    });
     res.end('Forbidden');
     return;
   }
@@ -35,14 +41,32 @@ const server = http.createServer((req, res) => {
   fs.readFile(filePath, (error, content) => {
     if (error) {
       if (error.code === 'ENOENT') {
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.writeHead(200, { 
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': '*',
+          'Cross-Origin-Resource-Policy': 'cross-origin',
+          'Cross-Origin-Embedder-Policy': 'require-corp',
+          'Content-Security-Policy': "frame-ancestors * chrome-extension://*"
+        });
         res.end('WaifuWire Server is Awake!');
       } else {
-        res.writeHead(500);
+        res.writeHead(500, {
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': '*',
+          'Cross-Origin-Resource-Policy': 'cross-origin',
+          'Cross-Origin-Embedder-Policy': 'require-corp',
+          'Content-Security-Policy': "frame-ancestors * chrome-extension://*"
+        });
         res.end(`Server Error: ${error.code}`);
       }
     } else {
-      res.writeHead(200, { 'Content-Type': contentType });
+      res.writeHead(200, { 
+        'Content-Type': contentType,
+        'Access-Control-Allow-Origin': '*',
+        'Cross-Origin-Resource-Policy': 'cross-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Content-Security-Policy': "frame-ancestors * chrome-extension://*"
+      });
       res.end(content, 'utf-8');
     }
   });

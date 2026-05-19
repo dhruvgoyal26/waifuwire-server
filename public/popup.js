@@ -333,6 +333,19 @@ document.addEventListener('DOMContentLoaded', () => {
       groups: updatedGroups
     }, '*');
 
+    // Automatically send a system group notification to sync the group with all other members
+    setTimeout(() => {
+      window.parent.postMessage({
+        source: 'waifuwire-iframe',
+        type: 'SEND_GROUP_MSG',
+        text: `Group "${name}" has been created!`,
+        senderName: 'System Notice',
+        groupId: newGroupId,
+        groupName: name,
+        members: checked
+      }, '*');
+    }, 100);
+
     // Reset panel inputs and close
     newGroupNameInput.value = '';
     createGroupPanel.style.display = 'none';

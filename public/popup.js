@@ -284,6 +284,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('add-contact-btn').addEventListener('click', () => {
     const newContact = targetInput.value.trim();
     if (newContact) {
+      if (!newContact.startsWith('WF-') || newContact.length !== 9) {
+        alert('Invalid ID! User IDs must start with "WF-" and be exactly 9 characters long (e.g., WF-A1B2C3). Please ask the other person for their "Unique Code" under their Profile tab.');
+        return;
+      }
       window.parent.postMessage({
         source: 'waifuwire-iframe',
         type: 'ADD_CONTACT',
@@ -544,6 +548,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (!text || !targetId) return;
 
+    if (!targetId.startsWith('WF-') || targetId.length !== 9) {
+      alert('Invalid Target User ID! User IDs must start with "WF-" and be exactly 9 characters long (e.g., WF-A1B2C3). Please verify the ID under the other person\'s Profile tab.');
+      return;
+    }
+
     window.parent.postMessage({
       source: 'waifuwire-iframe',
       type: 'SEND_DIRECT_MSG',
@@ -573,6 +582,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (targetId === currentUserId) {
         alert('You are already included in the group by default!');
+        return;
+      }
+
+      if (!targetId.startsWith('WF-') || targetId.length !== 9) {
+        alert('Invalid ID format! User IDs must start with "WF-" and be exactly 9 characters long (e.g., WF-A1B2C3). Please ask the other person for their "Unique Code" under their Profile tab.');
         return;
       }
 

@@ -152,14 +152,16 @@ wss.on('connection', (ws) => {
                 activeGroups[grp.id] = {
                   id: grp.id,
                   name: grp.name,
+                  creator: grp.creator || null,
                   members: grp.members
                 };
                 modified = true;
               } else {
                 const membersChanged = existing.members.length !== grp.members.length ||
                                       !existing.members.every(m => grp.members.includes(m));
-                if (existing.name !== grp.name || membersChanged) {
+                if (existing.name !== grp.name || existing.creator !== grp.creator || membersChanged) {
                   existing.name = grp.name;
+                  existing.creator = grp.creator || existing.creator || null;
                   existing.members = grp.members;
                   modified = true;
                 }
@@ -214,9 +216,11 @@ wss.on('connection', (ws) => {
 
         // Persist/Update custom group on server
         if (groupId && groupName && members) {
+          const existingCreator = activeGroups[groupId] ? activeGroups[groupId].creator : null;
           activeGroups[groupId] = {
             id: groupId,
             name: groupName,
+            creator: message.creator || existingCreator || null,
             members: members
           };
           saveGroupsToFile();
@@ -226,6 +230,7 @@ wss.on('connection', (ws) => {
           type: 'INCOMING_CUSTOM_GROUP_MSG',
           groupId: groupId,
           groupName: groupName,
+          creator: activeGroups[groupId] ? activeGroups[groupId].creator : null,
           members: members,
           payload: payload
         });
@@ -270,6 +275,34 @@ wss.on('connection', (ws) => {
             });
           }
         });
+      }
+
+      else if (message.type === 'DELETE_GROUP') {
+        const { groupId, members } = message;
+
+        // Remove group from server
+        if (activeGroups[groupId]) {
+          delete activeGroups[groupId];
+          saveGroupsToFile();
+        }
+
+        const broadcastData = JSON.stringify({
+          type: 'INCOMING_DELETE_GROUP',
+          groupId: groupId
+        });
+
+        // Notify all members of the group
+        if (Array.isArray(members)) {
+          members.forEach(memberId => {
+            if (clients.has(memberId)) {
+              clients.get(memberId).forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.send(broadcastData);
+                }
+              });
+            }
+          });
+        }
       }
 
       else if (message.type === 'DIRECT_MSG') {

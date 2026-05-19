@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const groupInput = document.getElementById('group-input');
   const groupSendBtn = document.getElementById('group-send-btn');
   const editGroupBtn = document.getElementById('edit-group-btn');
+  const deleteGroupBtn = document.getElementById('delete-group-btn');
   const groupPanelTitle = document.getElementById('group-panel-title');
   const groupAddMemberIdInput = document.getElementById('group-add-member-id');
   const groupAddMemberBtn = document.getElementById('group-add-member-btn');
@@ -165,6 +166,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         groupInput.placeholder = `Message ${activeGrp.name}...`;
         groupSendBtn.textContent = `Send to ${activeGrp.name}`;
+
+        // Toggle edit, delete, and leave buttons based on creator person
+        const isCreator = !activeGrp.creator || activeGrp.creator === currentUserId;
+        if (isCreator) {
+          editGroupBtn.style.display = 'inline-block';
+          if (deleteGroupBtn) deleteGroupBtn.style.display = 'inline-block';
+          leaveGroupBtn.style.display = 'none';
+        } else {
+          editGroupBtn.style.display = 'none';
+          if (deleteGroupBtn) deleteGroupBtn.style.display = 'none';
+          leaveGroupBtn.style.display = 'inline-block';
+        }
       } else {
         selectedGroupInfo.style.display = 'none';
       }
@@ -244,6 +257,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Refresh data to reflect deleted group
         window.parent.postMessage({ source: 'waifuwire-iframe', type: 'GET_DATA' }, '*');
       }
+
+      else if (msg.type === 'DELETE_GROUP_RESPONSE') {
+        // Refresh data to reflect deleted group
+        window.parent.postMessage({ source: 'waifuwire-iframe', type: 'GET_DATA' }, '*');
+      }
     }
   });
 
@@ -320,6 +338,30 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // Delete Group Action
+  if (deleteGroupBtn) {
+    deleteGroupBtn.addEventListener('click', () => {
+      const val = groupSelect.value;
+      if (val === 'global') return;
+      
+      const activeGrp = myGroups.find(g => g.id === val);
+      if (activeGrp) {
+        if (confirm(`Are you sure you want to delete the group "${activeGrp.name}" entirely?`)) {
+          window.parent.postMessage({
+            source: 'waifuwire-iframe',
+            type: 'DELETE_GROUP',
+            groupId: activeGrp.id,
+            members: activeGrp.members
+          }, '*');
+          
+          // Instantly switch back to global
+          groupSelect.value = 'global';
+          updateSelectedGroupView();
+        }
+      }
+    });
+  }
 
   // Show Create Group Panel
   showCreateGroupBtn.addEventListener('click', () => {
@@ -425,6 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const newGroup = {
         id: newGroupId,
         name: name,
+        creator: currentUserId,
         members: checked
       };
 
@@ -585,4 +628,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-

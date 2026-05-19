@@ -35,17 +35,25 @@
           <span style="font-weight: bold; color: var(--text-light);">Members:</span>
           <span id="group-members-display" style="font-size: 11px;">Loading...</span>
         </div>
-        <button id="leave-group-btn" class="secondary-btn" style="padding: 4px 8px; font-size: 11px; background: rgba(255, 60, 60, 0.1); color: #ff6b6b; border-color: rgba(255, 60, 60, 0.2);" title="Leave this custom group">Leave</button>
+        <div style="display: flex; gap: 4px;">
+          <button id="edit-group-btn" class="secondary-btn" style="padding: 4px 8px; font-size: 11px; border-color: var(--primary); color: var(--primary);" title="Add/Remove members in this group">Edit</button>
+          <button id="leave-group-btn" class="secondary-btn" style="padding: 4px 8px; font-size: 11px; background: rgba(255, 60, 60, 0.1); color: #ff6b6b; border-color: rgba(255, 60, 60, 0.2);" title="Leave this custom group">Leave</button>
+        </div>
       </div>
 
       <!-- Create Group Sliding Panel (Hidden by default) -->
       <div id="create-group-panel" style="display: none; flex-direction: column; gap: 10px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-        <h4 style="margin: 0 0 5px 0; color: var(--primary); text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">Create Custom Group</h4>
+        <h4 id="group-panel-title" style="margin: 0 0 5px 0; color: var(--primary); text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">Create Custom Group</h4>
         
         <input type="text" id="new-group-name" placeholder="Group Name (e.g. Friends)" class="styled-input" style="font-size: 13px;" />
         
         <div style="margin: 5px 0 2px 0;">
-          <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Select Members (Contacts Only):</span>
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Select Members:</span>
+        </div>
+        
+        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+          <input type="text" id="group-add-member-id" placeholder="Add Member by ID (e.g. WF-XXXXXX)" class="styled-input" style="flex: 1; font-size: 11px; padding: 6px 10px; margin: 0;" />
+          <button id="group-add-member-btn" type="button" class="secondary-btn" style="padding: 6px 10px; font-size: 11px; border-color: var(--primary); color: var(--primary); font-weight: bold;">Add</button>
         </div>
         
         <div id="group-contacts-checklist" style="max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">

@@ -19,11 +19,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const groupSendArea = document.getElementById('group-send-area');
   const groupInput = document.getElementById('group-input');
   const groupSendBtn = document.getElementById('group-send-btn');
+  const editGroupBtn = document.getElementById('edit-group-btn');
+  const groupPanelTitle = document.getElementById('group-panel-title');
+  const groupAddMemberIdInput = document.getElementById('group-add-member-id');
+  const groupAddMemberBtn = document.getElementById('group-add-member-btn');
 
   let myDisplayName = "Anonymous";
   let myContacts = [];
   let myGroups = [];
   let currentUserId = "";
+  let editingGroupId = null;
 
   // Tabs Logic
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -64,13 +69,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Render Scrollable Contacts Checklist for Group Creation (Constraints enforced)
-  function renderContactsChecklist() {
+  function renderContactsChecklist(preCheckedMembers = []) {
     checklistContainer.innerHTML = '';
-    if (myContacts.length === 0) {
-      checklistContainer.innerHTML = '<span style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 10px 0; width: 100%;">No saved contacts yet. Add contacts in the Private tab first!</span>';
-      return;
-    }
-    myContacts.forEach(contact => {
+    const renderedIds = new Set();
+
+    // Helper to render a checkbox item
+    function renderItem(id, displayName, isChecked) {
+      if (renderedIds.has(id)) return;
+      renderedIds.add(id);
+
       const div = document.createElement('div');
       div.style.display = 'flex';
       div.style.alignItems = 'center';
@@ -78,23 +85,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const chk = document.createElement('input');
       chk.type = 'checkbox';
-      chk.value = typeof contact === 'string' ? contact : contact.id;
+      chk.value = id;
       chk.className = 'group-contact-checkbox';
-      chk.id = `chk-${chk.value}`;
+      chk.id = `chk-${id}`;
       chk.style.margin = '0';
       chk.style.cursor = 'pointer';
+      chk.checked = isChecked;
 
       const lbl = document.createElement('label');
       lbl.htmlFor = chk.id;
       lbl.style.fontSize = '12px';
       lbl.style.cursor = 'pointer';
       lbl.style.color = 'var(--text-light)';
-      lbl.textContent = typeof contact === 'string' ? contact : `${contact.name} (${contact.id})`;
+      lbl.textContent = displayName;
 
       div.appendChild(chk);
       div.appendChild(lbl);
       checklistContainer.appendChild(div);
+    }
+
+    // 1. Render all saved contacts
+    myContacts.forEach(contact => {
+      const contactVal = typeof contact === 'string' ? contact : contact.id;
+      const displayName = typeof contact === 'string' ? contact : `${contact.name} (${contact.id})`;
+      const isChecked = preCheckedMembers.includes(contactVal);
+      renderItem(contactVal, displayName, isChecked);
     });
+
+    // 2. Render any existing group members who are NOT in contacts
+    preCheckedMembers.forEach(memberId => {
+      if (memberId === currentUserId) return;
+      if (!renderedIds.has(memberId)) {
+        renderItem(memberId, `Existing Member (${memberId})`, true);
+      }
+    });
+
+    if (renderedIds.size === 0) {
+      checklistContainer.innerHTML = '<span style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 10px 0; width: 100%;">No saved contacts yet. Add contacts in the Private tab first!</span>';
+    }
   }
 
   // Update selected custom group view info banner, placeholders
@@ -282,14 +310,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show Create Group Panel
   showCreateGroupBtn.addEventListener('click', () => {
+    editingGroupId = null;
+    groupPanelTitle.textContent = 'Create Custom Group';
+    createGroupSubmitBtn.textContent = 'Create';
+    newGroupNameInput.value = '';
     renderContactsChecklist();
     createGroupPanel.style.display = 'flex';
     groupSendArea.style.display = 'none';
     selectedGroupInfo.style.display = 'none';
   });
 
-  // Cancel Group Creation
+  // Edit Group Button Listener (Add/Remove members on existing group)
+  editGroupBtn.addEventListener('click', () => {
+    const val = groupSelect.value;
+    if (val === 'global') return;
+    const activeGrp = myGroups.find(g => g.id === val);
+    if (activeGrp) {
+      editingGroupId = activeGrp.id;
+      groupPanelTitle.textContent = 'Manage Group';
+      createGroupSubmitBtn.textContent = 'Save';
+      newGroupNameInput.value = activeGrp.name;
+      
+      // Exclude yourself from the checklist rendering, since own ID is auto-added
+      const membersExcludingMe = activeGrp.members.filter(m => m !== currentUserId);
+      renderContactsChecklist(membersExcludingMe);
+      
+      createGroupPanel.style.display = 'flex';
+      groupSendArea.style.display = 'none';
+      selectedGroupInfo.style.display = 'none';
+    }
+  });
+
+  // Cancel Group Creation/Editing
   createGroupCancelBtn.addEventListener('click', () => {
+    editingGroupId = null;
+    groupPanelTitle.textContent = 'Create Custom Group';
+    createGroupSubmitBtn.textContent = 'Create';
     createGroupPanel.style.display = 'none';
     groupSendArea.style.display = 'flex';
     updateSelectedGroupView();
@@ -300,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'GRP-' + Math.floor(100000 + Math.random() * 900000);
   }
 
-  // Create Group Submit Action
+  // Create/Edit Group Submit Action
   createGroupSubmitBtn.addEventListener('click', () => {
     const name = newGroupNameInput.value.trim();
     if (!name) {
@@ -319,41 +375,78 @@ document.addEventListener('DOMContentLoaded', () => {
       checked.push(currentUserId);
     }
 
-    const newGroupId = generateGroupId();
-    const newGroup = {
-      id: newGroupId,
-      name: name,
-      members: checked
-    };
+    let finalGroupId;
 
-    const updatedGroups = [...myGroups, newGroup];
-    window.parent.postMessage({
-      source: 'waifuwire-iframe',
-      type: 'SAVE_GROUPS',
-      groups: updatedGroups
-    }, '*');
+    if (editingGroupId) {
+      // Editing Mode
+      finalGroupId = editingGroupId;
+      const activeGrp = myGroups.find(g => g.id === editingGroupId);
+      if (activeGrp) {
+        activeGrp.name = name;
+        activeGrp.members = checked;
+        
+        window.parent.postMessage({
+          source: 'waifuwire-iframe',
+          type: 'SAVE_GROUPS',
+          groups: myGroups
+        }, '*');
 
-    // Automatically send a system group notification to sync the group with all other members
-    setTimeout(() => {
+        // Broadcast a system update so everyone online auto-registers the updated membership roster
+        const targetGroupId = editingGroupId;
+        setTimeout(() => {
+          window.parent.postMessage({
+            source: 'waifuwire-iframe',
+            type: 'SEND_GROUP_MSG',
+            text: `Group settings and members have been updated!`,
+            senderName: 'System Notice',
+            groupId: targetGroupId,
+            groupName: name,
+            members: checked
+          }, '*');
+        }, 100);
+      }
+    } else {
+      // Creation Mode
+      const newGroupId = generateGroupId();
+      finalGroupId = newGroupId;
+      const newGroup = {
+        id: newGroupId,
+        name: name,
+        members: checked
+      };
+
+      const updatedGroups = [...myGroups, newGroup];
       window.parent.postMessage({
         source: 'waifuwire-iframe',
-        type: 'SEND_GROUP_MSG',
-        text: `Group "${name}" has been created!`,
-        senderName: 'System Notice',
-        groupId: newGroupId,
-        groupName: name,
-        members: checked
+        type: 'SAVE_GROUPS',
+        groups: updatedGroups
       }, '*');
-    }, 100);
+
+      // Automatically send a system group notification to sync the group with all other members
+      setTimeout(() => {
+        window.parent.postMessage({
+          source: 'waifuwire-iframe',
+          type: 'SEND_GROUP_MSG',
+          text: `Group "${name}" has been created!`,
+          senderName: 'System Notice',
+          groupId: newGroupId,
+          groupName: name,
+          members: checked
+        }, '*');
+      }, 100);
+    }
 
     // Reset panel inputs and close
+    editingGroupId = null;
+    groupPanelTitle.textContent = 'Create Custom Group';
+    createGroupSubmitBtn.textContent = 'Create';
     newGroupNameInput.value = '';
     createGroupPanel.style.display = 'none';
     groupSendArea.style.display = 'flex';
 
-    // Auto-select the newly created group after a brief delay for storage synchronization
+    // Auto-select the newly created or updated group after a brief delay for storage synchronization
     setTimeout(() => {
-      groupSelect.value = newGroupId;
+      groupSelect.value = finalGroupId;
       updateSelectedGroupView();
     }, 150);
   });
@@ -412,4 +505,71 @@ document.addEventListener('DOMContentLoaded', () => {
       senderName: myDisplayName
     }, '*');
   });
+
+  // Add Member by ID Action
+  if (groupAddMemberBtn && groupAddMemberIdInput) {
+    groupAddMemberBtn.addEventListener('click', () => {
+      const targetId = groupAddMemberIdInput.value.trim();
+      if (!targetId) {
+        alert('Please enter a User ID.');
+        return;
+      }
+
+      if (targetId === currentUserId) {
+        alert('You are already included in the group by default!');
+        return;
+      }
+
+      // Check if already in the checklist
+      const existingCheckbox = document.getElementById(`chk-${targetId}`);
+      if (existingCheckbox) {
+        if (existingCheckbox.checked) {
+          alert('This member is already added and checked.');
+        } else {
+          existingCheckbox.checked = true;
+          alert('Member has been checked in the list below.');
+        }
+        groupAddMemberIdInput.value = '';
+        return;
+      }
+
+      // Clear the "No saved contacts yet" message if it exists
+      if (checklistContainer.innerHTML.includes('No saved contacts yet')) {
+        checklistContainer.innerHTML = '';
+      }
+
+      // Create and append the new checkbox item dynamically
+      const div = document.createElement('div');
+      div.style.display = 'flex';
+      div.style.alignItems = 'center';
+      div.style.gap = '8px';
+
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.value = targetId;
+      chk.className = 'group-contact-checkbox';
+      chk.id = `chk-${targetId}`;
+      chk.style.margin = '0';
+      chk.style.cursor = 'pointer';
+      chk.checked = true;
+
+      const lbl = document.createElement('label');
+      lbl.htmlFor = chk.id;
+      lbl.style.fontSize = '12px';
+      lbl.style.cursor = 'pointer';
+      lbl.style.color = 'var(--text-light)';
+      lbl.textContent = `Added Member (${targetId})`;
+
+      div.appendChild(chk);
+      div.appendChild(lbl);
+      checklistContainer.appendChild(div);
+
+      // Scroll to bottom
+      checklistContainer.scrollTop = checklistContainer.scrollHeight;
+
+      // Clear input
+      groupAddMemberIdInput.value = '';
+    });
+  }
 });
+

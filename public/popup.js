@@ -25,6 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const groupAddMemberIdInput = document.getElementById('group-add-member-id');
   const groupAddMemberBtn = document.getElementById('group-add-member-btn');
 
+  // Custom Modal UI Elements
+  const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+  const deleteModalMessage = document.getElementById('delete-modal-message');
+  const deleteModalCancelBtn = document.getElementById('delete-modal-cancel-btn');
+  const deleteModalConfirmBtn = document.getElementById('delete-modal-confirm-btn');
+  const modalCloseX = document.getElementById('modal-close-x');
+
+
   let myDisplayName = "Anonymous";
   let myContacts = [];
   let myGroups = [];
@@ -345,24 +353,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Delete Group Action
   if (deleteGroupBtn) {
+    let groupToDelete = null;
+
     deleteGroupBtn.addEventListener('click', () => {
       const val = groupSelect.value;
       if (val === 'global') return;
       
       const activeGrp = myGroups.find(g => g.id === val);
       if (activeGrp) {
-        if (confirm(`Are you sure you want to delete the group "${activeGrp.name}" entirely?`)) {
-          window.parent.postMessage({
-            source: 'waifuwire-iframe',
-            type: 'DELETE_GROUP',
-            groupId: activeGrp.id,
-            members: activeGrp.members
-          }, '*');
-          
-          // Instantly switch back to global
-          groupSelect.value = 'global';
-          updateSelectedGroupView();
-        }
+        groupToDelete = activeGrp;
+        deleteModalMessage.textContent = `Are you sure you want to delete the group "${activeGrp.name}" entirely?`;
+        deleteConfirmModal.classList.add('active');
+      }
+    });
+
+    const closeModal = () => {
+      deleteConfirmModal.classList.remove('active');
+      groupToDelete = null;
+    };
+
+    deleteModalCancelBtn.addEventListener('click', closeModal);
+    modalCloseX.addEventListener('click', closeModal);
+    
+    // Close when clicking outside content area
+    deleteConfirmModal.addEventListener('click', (e) => {
+      if (e.target === deleteConfirmModal) {
+        closeModal();
+      }
+    });
+
+    deleteModalConfirmBtn.addEventListener('click', () => {
+      if (groupToDelete) {
+        window.parent.postMessage({
+          source: 'waifuwire-iframe',
+          type: 'DELETE_GROUP',
+          groupId: groupToDelete.id,
+          members: groupToDelete.members
+        }, '*');
+        
+        // Instantly switch back to global
+        groupSelect.value = 'global';
+        updateSelectedGroupView();
+        closeModal();
       }
     });
   }

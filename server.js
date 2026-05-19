@@ -141,6 +141,58 @@ wss.on('connection', (ws) => {
         }
       }
 
+      else if (message.type === 'SYNC_GROUPS_TO_SERVER') {
+        const { groups } = message;
+        if (Array.isArray(groups)) {
+          let modified = false;
+          groups.forEach(grp => {
+            if (grp && grp.id && grp.name && grp.members) {
+              const existing = activeGroups[grp.id];
+              if (!existing) {
+                activeGroups[grp.id] = {
+                  id: grp.id,
+                  name: grp.name,
+                  members: grp.members
+                };
+                modified = true;
+              } else {
+                const membersChanged = existing.members.length !== grp.members.length ||
+                                      !existing.members.every(m => grp.members.includes(m));
+                if (existing.name !== grp.name || membersChanged) {
+                  existing.name = grp.name;
+                  existing.members = grp.members;
+                  modified = true;
+                }
+              }
+            }
+          });
+
+          if (modified) {
+            saveGroupsToFile();
+          }
+
+          // Broadcast the sync to all members of these groups who are online
+          groups.forEach(grp => {
+            if (grp && grp.id && grp.members && activeGroups[grp.id]) {
+              const broadcastData = JSON.stringify({
+                type: 'SYNC_GROUPS',
+                groups: [activeGroups[grp.id]]
+              });
+
+              grp.members.forEach(memberId => {
+                if (clients.has(memberId)) {
+                  clients.get(memberId).forEach(client => {
+                    if (client.readyState === WebSocket.OPEN) {
+                      client.send(broadcastData);
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      }
+
       else if (message.type === 'GROUP_MSG') {
         const broadcastData = JSON.stringify({
           type: 'INCOMING_GROUP_MSG',

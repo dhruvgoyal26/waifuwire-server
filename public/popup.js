@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Render Contacts Dropdown (Private Tab)
   function renderContacts() {
+    const currentSelectedValue = contactsSelect.value;
     contactsSelect.innerHTML = '<option value="">-- Saved Contacts --</option>';
     myContacts.forEach(contact => {
       const opt = document.createElement('option');
@@ -54,11 +55,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       contactsSelect.appendChild(opt);
     });
+
+    if (currentSelectedValue && Array.from(contactsSelect.options).some(opt => opt.value === currentSelectedValue)) {
+      contactsSelect.value = currentSelectedValue;
+    } else {
+      contactsSelect.value = '';
+    }
   }
 
   // Render Groups Dropdown Selector (Group Tab)
   function renderGroups() {
-    // Keep first option
+    const currentSelectedValue = groupSelect.value;
     groupSelect.innerHTML = '<option value="global">🌐 Global Chat (Everyone)</option>';
     myGroups.forEach(grp => {
       const opt = document.createElement('option');
@@ -66,6 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
       opt.textContent = `👥 ${grp.name} (${grp.members.length} members)`;
       groupSelect.appendChild(opt);
     });
+
+    if (currentSelectedValue && Array.from(groupSelect.options).some(opt => opt.value === currentSelectedValue)) {
+      groupSelect.value = currentSelectedValue;
+    } else {
+      groupSelect.value = 'global';
+    }
   }
 
   // Render Scrollable Contacts Checklist for Group Creation (Constraints enforced)
@@ -366,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const checked = Array.from(document.querySelectorAll('.group-contact-checkbox:checked')).map(el => el.value);
     if (checked.length === 0) {
-      alert('Please select at least one saved contact to add to the group!');
+      alert('Please select or add at least one member to the group!');
       return;
     }
 

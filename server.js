@@ -78,6 +78,27 @@ server.listen(port, () => {
   console.log(`WaifuWire V2 server started on port ${port}`);
 });
 
+// Server-side custom groups persistence
+const GROUPS_FILE = path.join(__dirname, 'groups.json');
+let activeGroups = {};
+
+try {
+  if (fs.existsSync(GROUPS_FILE)) {
+    activeGroups = JSON.parse(fs.readFileSync(GROUPS_FILE, 'utf8'));
+    console.log(`Loaded ${Object.keys(activeGroups).length} custom groups from persistence.`);
+  }
+} catch (err) {
+  console.error('Error reading groups.json file:', err);
+}
+
+function saveGroupsToFile() {
+  try {
+    fs.writeFileSync(GROUPS_FILE, JSON.stringify(activeGroups, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error writing groups.json file:', err);
+  }
+}
+
 // Map of userId -> Set of WebSockets (a user might have multiple tabs/windows open)
 const clients = new Map();
 
@@ -104,6 +125,20 @@ wss.on('connection', (ws) => {
         }
         clients.get(currentUserId).add(ws);
         console.log(`User registered: ${currentUserId}`);
+
+        // Sync custom groups where this user is a member
+        const userGroups = [];
+        for (const gId in activeGroups) {
+          if (activeGroups[gId].members && activeGroups[gId].members.includes(currentUserId)) {
+            userGroups.push(activeGroups[gId]);
+          }
+        }
+        if (userGroups.length > 0) {
+          ws.send(JSON.stringify({
+            type: 'SYNC_GROUPS',
+            groups: userGroups
+          }));
+        }
       }
 
       else if (message.type === 'GROUP_MSG') {
@@ -124,6 +159,17 @@ wss.on('connection', (ws) => {
 
       else if (message.type === 'CUSTOM_GROUP_MSG') {
         const { groupId, groupName, members, payload } = message;
+
+        // Persist/Update custom group on server
+        if (groupId && groupName && members) {
+          activeGroups[groupId] = {
+            id: groupId,
+            name: groupName,
+            members: members
+          };
+          saveGroupsToFile();
+        }
+
         const broadcastData = JSON.stringify({
           type: 'INCOMING_CUSTOM_GROUP_MSG',
           groupId: groupId,
@@ -146,6 +192,16 @@ wss.on('connection', (ws) => {
 
       else if (message.type === 'LEAVE_GROUP') {
         const { groupId, leavingUserId, members } = message;
+
+        // Update group membership on server
+        if (activeGroups[groupId]) {
+          activeGroups[groupId].members = activeGroups[groupId].members.filter(m => m !== leavingUserId);
+          if (activeGroups[groupId].members.length <= 1) {
+            delete activeGroups[groupId];
+          }
+          saveGroupsToFile();
+        }
+
         const broadcastData = JSON.stringify({
           type: 'INCOMING_LEAVE_GROUP',
           groupId: groupId,
